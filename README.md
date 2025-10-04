@@ -14,16 +14,6 @@
 
 ---
 
-## 📸 Dashboard Preview
-
-![Air Quality Monitor Dashboard](screenshots/dashboard-preview.jpg)
-
-<div align="center">
-  <img src="screenshots/dashboard-preview.jpg" alt="Air Quality Monitor Dashboard" width="80%" />
-</div>
-
-*Ultra-modern dashboard featuring real-time air quality data, interactive maps, animated statistics, and beautiful glassmorphism UI*
-
 ---
 
 ## 📋 Table of Contents
