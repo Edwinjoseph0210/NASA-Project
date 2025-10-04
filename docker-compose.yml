@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with PostGIS
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: airaware-postgres
+    environment:
+      POSTGRES_DB: airaware
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - airaware-network
+    restart: unless-stopped
+
+  # Redis for caching and message broker
+  redis:
+    image: redis:7-alpine
+    container_name: airaware-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - airaware-network
+    restart: unless-stopped
+
+  # Backend FastAPI Application
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: airaware-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/airaware
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - AIRNOW_API_KEY=${AIRNOW_API_KEY:-}
+      - NASA_EARTHDATA_USERNAME=${NASA_EARTHDATA_USERNAME:-}
+      - NASA_EARTHDATA_PASSWORD=${NASA_EARTHDATA_PASSWORD:-}
+      - WEB_PUSH_VAPID_PUBLIC_KEY=${WEB_PUSH_VAPID_PUBLIC_KEY:-}
+      - WEB_PUSH_VAPID_PRIVATE_KEY=${WEB_PUSH_VAPID_PRIVATE_KEY:-}
+      - WEB_PUSH_VAPID_EMAIL=${WEB_PUSH_VAPID_EMAIL:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./ml:/app/ml
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 10 &&
+        echo 'Starting backend...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Celery Worker for background tasks
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: airaware-celery-worker
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/airaware
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - AIRNOW_API_KEY=${AIRNOW_API_KEY:-}
+      - NASA_EARTHDATA_USERNAME=${NASA_EARTHDATA_USERNAME:-}
+      - NASA_EARTHDATA_PASSWORD=${NASA_EARTHDATA_PASSWORD:-}
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./ml:/app/ml
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 15 &&
+        echo 'Starting Celery worker...' &&
+        celery -A app.core.celery worker --loglevel=info
+      "
+
+  # Celery Beat for scheduled tasks
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: airaware-celery-beat
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/airaware
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./ml:/app/ml
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 20 &&
+        echo 'Starting Celery beat...' &&
+        celery -A app.core.celery beat --loglevel=info
+      "
+
+  # Frontend Next.js Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    container_name: airaware-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_MAPBOX_TOKEN=${MAPBOX_TOKEN:-pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for backend...' &&
+        sleep 30 &&
+        echo 'Starting frontend...' &&
+        npm run dev
+      "
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: airaware-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  airaware-network:
+    driver: bridge

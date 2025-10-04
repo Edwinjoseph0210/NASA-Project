@@ -1,0 +1,110 @@
+# AirAware Kerala - Localized Air Quality Forecasting
+# Focused on Kottayam, Kerala region
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database with PostGIS
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: airaware-kerala-postgres
+    environment:
+      POSTGRES_DB: airaware_kerala
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-kerala-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - airaware-network
+    restart: unless-stopped
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: airaware-kerala-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - airaware-network
+    restart: unless-stopped
+
+  # Backend FastAPI Application
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: airaware-kerala-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/airaware_kerala
+      - REDIS_URL=redis://redis:6379
+      - PROJECT_NAME=AirAware Kerala
+      - FOCUS_REGION=Kottayam,Kerala,India
+      - REGION_BOUNDS_NORTH=9.8
+      - REGION_BOUNDS_SOUTH=9.4
+      - REGION_BOUNDS_EAST=76.8
+      - REGION_BOUNDS_WEST=76.2
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./ml:/app/ml
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 10 &&
+        echo 'Starting Kerala AirAware backend...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Frontend Next.js Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    container_name: airaware-kerala-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw
+      - NEXT_PUBLIC_FOCUS_REGION=Kottayam,Kerala
+      - NEXT_PUBLIC_REGION_CENTER_LAT=9.6
+      - NEXT_PUBLIC_REGION_CENTER_LON=76.5
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - airaware-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for backend...' &&
+        sleep 30 &&
+        echo 'Starting Kerala AirAware frontend...' &&
+        npm run dev
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  airaware-network:
+    driver: bridge

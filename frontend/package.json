@@ -1,0 +1,52 @@
+{
+  "name": "airaware-frontend",
+  "version": "1.0.0",
+  "description": "AirAware Frontend - Real-Time Air Quality Forecasting with NASA TEMPO",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "14.0.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "5.3.2",
+    "@types/node": "20.9.0",
+    "@types/react": "18.2.37",
+    "@types/react-dom": "18.2.15",
+    "tailwindcss": "3.3.6",
+    "autoprefixer": "10.4.16",
+    "postcss": "8.4.31",
+    "mapbox-gl": "2.15.0",
+    "@types/mapbox-gl": "2.7.18",
+    "recharts": "2.8.0",
+    "axios": "1.6.2",
+    "react-query": "3.39.3",
+    "react-hook-form": "7.47.0",
+    "@hookform/resolvers": "3.3.2",
+    "zod": "3.22.4",
+    "date-fns": "2.30.0",
+    "lucide-react": "0.294.0",
+    "clsx": "2.0.0",
+    "class-variance-authority": "0.7.0",
+    "framer-motion": "10.16.16",
+    "react-hot-toast": "2.4.1",
+    "react-use": "17.4.0",
+    "@types/react-use": "17.4.0"
+  },
+  "devDependencies": {
+    "eslint": "8.54.0",
+    "eslint-config-next": "14.0.3",
+    "@typescript-eslint/eslint-plugin": "6.12.0",
+    "@typescript-eslint/parser": "6.12.0",
+    "prettier": "3.1.0",
+    "prettier-plugin-tailwindcss": "0.5.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

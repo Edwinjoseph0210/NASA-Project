@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ernakulam Air Quality Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-item h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .summary-item .value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .summary-item .label {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .stations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .station-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .station-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .station-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .station-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .station-location {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .aqi-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: white;
+        }
+
+        .aqi-good { background: #00e400; }
+        .aqi-moderate { background: #ffff00; color: #333; }
+        .aqi-unhealthy-sensitive { background: #ff7e00; }
+        .aqi-unhealthy { background: #ff0000; }
+        .aqi-very-unhealthy { background: #8f3f97; }
+        .aqi-hazardous { background: #7e0023; }
+
+        .pollutants {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .pollutant {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .pollutant-name {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .pollutant-value {
+            font-size: 1.1em;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .health-advisory {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #1976d2;
+            border-left: 4px solid #2196f3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.5em;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #f44336;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #764ba2;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 Ernakulam Air Quality Monitor</h1>
+            <p class="subtitle">Real-time pollution monitoring for Ernakulam District, Kerala</p>
+            <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+        </header>
+
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="error" style="display: none;"></div>
+        <div id="content" style="display: none;">
+            <div class="summary-card">
+                <h2>District Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <h3>Overall AQI</h3>
+                        <div class="value" id="overall-aqi">--</div>
+                        <div class="label" id="aqi-category">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <h3>Avg PM2.5</h3>
+                        <div class="value" id="avg-pm25">--</div>
+                        <div class="label">μg/m³</div>
+                    </div>
+                    <div class="summary-item">
+                        <h3>Avg PM10</h3>
+                        <div class="value" id="avg-pm10">--</div>
+                        <div class="label">μg/m³</div>
+                    </div>
+                    <div class="summary-item">
+                        <h3>Monitoring Stations</h3>
+                        <div class="value" id="total-stations">--</div>
+                        <div class="label">Active</div>
+                    </div>
+                </div>
+                <div class="health-advisory" id="health-advisory">
+                    Loading health advisory...
+                </div>
+            </div>
+
+            <h2 style="color: white; margin-bottom: 20px;">Monitoring Stations</h2>
+            <div class="stations-grid" id="stations-grid">
+                <!-- Stations will be loaded here -->
+            </div>
+        </div>
+
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        function getAQIClass(aqi) {
+            if (aqi <= 50) return 'aqi-good';
+            if (aqi <= 100) return 'aqi-moderate';
+            if (aqi <= 150) return 'aqi-unhealthy-sensitive';
+            if (aqi <= 200) return 'aqi-unhealthy';
+            if (aqi <= 300) return 'aqi-very-unhealthy';
+            return 'aqi-hazardous';
+        }
+
+        function createStationCard(station) {
+            return `
+                <div class="station-card">
+                    <div class="station-header">
+                        <div>
+                            <div class="station-name">${station.station_name}</div>
+                            <div class="station-location">📍 ${station.location}</div>
+                        </div>
+                        <div class="aqi-badge ${getAQIClass(station.aqi)}">
+                            ${station.aqi}
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin: 10px 0; color: #666; font-weight: bold;">
+                        ${station.aqi_category}
+                    </div>
+                    <div class="pollutants">
+                        <div class="pollutant">
+                            <div class="pollutant-name">PM2.5</div>
+                            <div class="pollutant-value">${station.pollutants.pm25.toFixed(1)}</div>
+                        </div>
+                        <div class="pollutant">
+                            <div class="pollutant-name">PM10</div>
+                            <div class="pollutant-value">${station.pollutants.pm10.toFixed(1)}</div>
+                        </div>
+                        <div class="pollutant">
+                            <div class="pollutant-name">NO₂</div>
+                            <div class="pollutant-value">${station.pollutants.no2.toFixed(1)}</div>
+                        </div>
+                        <div class="pollutant">
+                            <div class="pollutant-name">O₃</div>
+                            <div class="pollutant-value">${station.pollutants.o3.toFixed(1)}</div>
+                        </div>
+                        <div class="pollutant">
+                            <div class="pollutant-name">SO₂</div>
+                            <div class="pollutant-value">${station.pollutants.so2.toFixed(1)}</div>
+                        </div>
+                        <div class="pollutant">
+                            <div class="pollutant-name">CO</div>
+                            <div class="pollutant-value">${station.pollutants.co.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="health-advisory">
+                        ${station.health_advisory}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('content').style.display = 'none';
+
+                const response = await fetch(`${API_BASE}/api/summary`);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const data = await response.json();
+
+                // Update summary
+                document.getElementById('overall-aqi').textContent = data.overall_aqi;
+                document.getElementById('aqi-category').textContent = data.aqi_category;
+                document.getElementById('avg-pm25').textContent = data.averages.pm25.toFixed(1);
+                document.getElementById('avg-pm10').textContent = data.averages.pm10.toFixed(1);
+                document.getElementById('total-stations').textContent = data.total_stations;
+                document.getElementById('health-advisory').textContent = data.health_advisory;
+
+                // Update stations
+                const stationsGrid = document.getElementById('stations-grid');
+                stationsGrid.innerHTML = data.stations.map(createStationCard).join('');
+
+                // Update timestamp
+                const timestamp = new Date(data.timestamp);
+                document.getElementById('timestamp').textContent = 
+                    `Last updated: ${timestamp.toLocaleString()}`;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${error.message}<br>
+                        <small>Make sure the API server is running at ${API_BASE}</small>
+                    </div>
+                `;
+            }
+        }
+
+        // Load data on page load
+        loadData();
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadData, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

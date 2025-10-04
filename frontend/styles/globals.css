@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for AirAware */
+
+/* AQI Color Classes */
+.aqi-good {
+  @apply text-green-600 bg-green-100;
+}
+
+.aqi-moderate {
+  @apply text-yellow-600 bg-yellow-100;
+}
+
+.aqi-unhealthy-sensitive {
+  @apply text-orange-600 bg-orange-100;
+}
+
+.aqi-unhealthy {
+  @apply text-red-600 bg-red-100;
+}
+
+.aqi-very-unhealthy {
+  @apply text-purple-600 bg-purple-100;
+}
+
+.aqi-hazardous {
+  @apply text-red-800 bg-red-200;
+}
+
+/* Mapbox overrides */
+.mapboxgl-popup-content {
+  @apply rounded-lg shadow-lg;
+}
+
+.mapboxgl-popup-close-button {
+  @apply text-gray-500 hover:text-gray-700;
+}
+
+/* Chart styles */
+.recharts-tooltip-wrapper {
+  @apply shadow-lg rounded-lg;
+}
+
+.recharts-tooltip-content {
+  @apply bg-white border border-gray-200 rounded-lg;
+}
+
+/* Loading animations */
+.loading-pulse {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+.loading-spinner {
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-blue-600;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    @apply hidden;
+  }
+}
+
+@media (min-width: 641px) {
+  .desktop-hidden {
+    @apply hidden;
+  }
+}

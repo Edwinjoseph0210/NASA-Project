@@ -1,0 +1,7 @@
+# Simplified requirements for Ernakulam Air Quality Monitor
+# Minimal dependencies - no database, no complex ML, no external APIs
+
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==1.10.13
+python-multipart==0.0.6

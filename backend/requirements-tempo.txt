@@ -1,0 +1,15 @@
+# Requirements for NASA TEMPO Air Quality Monitor
+# Includes support for real API calls to OpenAQ and NASA data sources
+
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==1.10.13
+python-multipart==0.0.6
+aiohttp==3.9.1
+python-dotenv==1.0.0
+
+# Optional: For NASA TEMPO NetCDF data processing (if you get real satellite data)
+# Uncomment these if you want to process actual TEMPO NetCDF files:
+# xarray==2023.12.0
+# netCDF4==1.6.5
+# h5netcdf==1.3.0
